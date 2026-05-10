@@ -100,25 +100,48 @@ router.get('/dashboard', (req, res) => {
   const projectParams = isAdmin ? [] : [userId, userId];
 
   const projects = db.prepare(`SELECT COUNT(*) as cnt FROM projects p ${projectFilter}`).get(...projectParams);
-const myTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? OR created_by = ?`).get(userId, userId);
-const overdueTasks = db.prepare(`
-    SELECT COUNT(*) as cnt FROM tasks t
-    WHERE (t.assignee_id = ? OR t.created_by = ?) AND t.due_date < DATE('now') AND t.status != 'done'
-  `).get(userId, userId);
-const completedTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE (assignee_id = ? OR created_by = ?) AND status = 'done'`).get(userId, userId);
-  const recentTasks = db.prepare(`
-    SELECT t.*, p.name as project_name, u.name as assignee_name
-    FROM tasks t JOIN projects p ON t.project_id = p.id
-    LEFT JOIN users u ON t.assignee_id = u.id
-    WHERE t.assignee_id = ? OR t.created_by = ?
-    ORDER BY t.updated_at DESC LIMIT 10
-  `).all(userId, userId);
+const taskQuery = isAdmin
+  ? `SELECT COUNT(*) as cnt FROM tasks`
+  : `SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? OR created_by = ?`;
 
-  const tasksByStatus = db.prepare(`
-    SELECT status, COUNT(*) as count FROM tasks
-    WHERE assignee_id = ? GROUP BY status
-  `).all(userId);
+const myTasks = isAdmin
+  ? db.prepare(taskQuery).get()
+  : db.prepare(taskQuery).get(userId, userId);
 
+const overdueQuery = isAdmin
+  ? `SELECT COUNT(*) as cnt FROM tasks t WHERE t.due_date < DATE('now') AND t.status != 'done'`
+  : `SELECT COUNT(*) as cnt FROM tasks t WHERE (t.assignee_id = ? OR t.created_by = ?) AND t.due_date < DATE('now') AND t.status != 'done'`;
+
+const overdueTasks = isAdmin
+  ? db.prepare(overdueQuery).get()
+  : db.prepare(overdueQuery).get(userId, userId);
+
+const completedQuery = isAdmin
+  ? `SELECT COUNT(*) as cnt FROM tasks WHERE status = 'done'`
+  : `SELECT COUNT(*) as cnt FROM tasks WHERE (assignee_id = ? OR created_by = ?) AND status = 'done'`;
+
+const completedTasks = isAdmin
+  ? db.prepare(completedQuery).get()
+  : db.prepare(completedQuery).get(userId, userId);
+
+const recentTasks = isAdmin
+  ? db.prepare(`
+      SELECT t.*, p.name as project_name, u.name as assignee_name
+      FROM tasks t JOIN projects p ON t.project_id = p.id
+      LEFT JOIN users u ON t.assignee_id = u.id
+      ORDER BY t.updated_at DESC LIMIT 10
+    `).all()
+  : db.prepare(`
+      SELECT t.*, p.name as project_name, u.name as assignee_name
+      FROM tasks t JOIN projects p ON t.project_id = p.id
+      LEFT JOIN users u ON t.assignee_id = u.id
+      WHERE t.assignee_id = ? OR t.created_by = ?
+      ORDER BY t.updated_at DESC LIMIT 10
+    `).all(userId, userId);
+
+const tasksByStatus = isAdmin
+  ? db.prepare(`SELECT status, COUNT(*) as count FROM tasks GROUP BY status`).all()
+  : db.prepare(`SELECT status, COUNT(*) as count FROM tasks WHERE assignee_id = ? OR created_by = ? GROUP BY status`).all(userId, userId);
   res.json({
     stats: {
       projects: projects.cnt,

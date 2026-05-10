@@ -44,6 +44,6 @@ db.prepare('INSERT INTO tasks (title, description, status, priority, project_id,
 db.prepare('INSERT INTO tasks (title, description, status, priority, project_id, assignee_id, created_by, due_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('Update onboarding flow', '', 'in_progress', 'medium', p2, member1Id, member1Id, fmt(nextMonth));
 
 console.log('✅ Seed complete!');
-console.log('  admin@demo.com / admin123');
+console.log('  jane@gmail.com / janejane');
 console.log('  alice@demo.com / member123');
 console.log('  bob@demo.com / member123');

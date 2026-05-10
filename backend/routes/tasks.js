@@ -100,13 +100,12 @@ router.get('/dashboard', (req, res) => {
   const projectParams = isAdmin ? [] : [userId, userId];
 
   const projects = db.prepare(`SELECT COUNT(*) as cnt FROM projects p ${projectFilter}`).get(...projectParams);
-  const myTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ?`).get(userId);
-  const overdueTasks = db.prepare(`
+const myTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? OR created_by = ?`).get(userId, userId);
+const overdueTasks = db.prepare(`
     SELECT COUNT(*) as cnt FROM tasks t
-    WHERE t.assignee_id = ? AND t.due_date < DATE('now') AND t.status != 'done'
-  `).get(userId);
-  const completedTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assignee_id = ? AND status = 'done'`).get(userId);
-
+    WHERE (t.assignee_id = ? OR t.created_by = ?) AND t.due_date < DATE('now') AND t.status != 'done'
+  `).get(userId, userId);
+const completedTasks = db.prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE (assignee_id = ? OR created_by = ?) AND status = 'done'`).get(userId, userId);
   const recentTasks = db.prepare(`
     SELECT t.*, p.name as project_name, u.name as assignee_name
     FROM tasks t JOIN projects p ON t.project_id = p.id

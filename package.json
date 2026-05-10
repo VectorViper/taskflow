@@ -2,13 +2,10 @@
   "name": "taskflow",
   "version": "1.0.0",
   "scripts": {
-    "install:all": "cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm run build",
-    "start": "cd backend && node server.js",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev"
+    "build": "cd frontend && npm install && ./node_modules/.bin/vite build",
+    "start": "cd backend && npm install && node server.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
